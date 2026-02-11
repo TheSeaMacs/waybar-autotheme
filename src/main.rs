@@ -1,7 +1,6 @@
 use image::GenericImageView;
 use kmeans_colors::get_kmeans_hamerly;
 use palette::{FromColor, Lab, Srgb};
-use std::fmt::format;
 use std::fs;
 use std::io;
 use std::process::Command;

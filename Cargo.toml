@@ -1,0 +1,10 @@
+[package]
+name = "rustwall"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+image = "*"
+kmeans_colors = "0.7.1"
+palette = "0.7.6"
+regex = "1"

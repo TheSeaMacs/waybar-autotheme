@@ -104,8 +104,17 @@ fn main() {
         .collect();
 
     let result = get_kmeans_hamerly(2, 20, 0.005, false, &pixels, 42);
-    let color_1 = Srgb::from_color(result.centroids[0]);
-    let color_2 = Srgb::from_color(result.centroids[1]);
+
+    let mut lab_bg = result.centroids[0];
+    let mut lab_fg = result.centroids[1];
+
+    lab_bg.l *= 0.4;
+    lab_fg.l = (lab_fg.l * 1.5).min(95.0);
+    lab_fg.a *= 2.0;
+    lab_fg.b *= 2.0;
+
+    let color_1 = Srgb::from_color(lab_bg);
+    let color_2 = Srgb::from_color(lab_fg);
 
     let bg = format!(
         "#{:02x}{:02x}{:02x}",

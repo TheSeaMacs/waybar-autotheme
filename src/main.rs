@@ -51,6 +51,19 @@ fn update_waybar_theme(bg: &str, fg: &str) -> std::io::Result<()> {
     Ok(())
 }
 
+fn update_hyprland_theme(bg: &str) -> std::io::Result<()> {
+    let cut_bg: String = bg.chars().skip(1).collect();
+    let arg = format!("rgba({}AA)", cut_bg);
+    let status = Command::new("hyprctl")
+        .args(["keyword", "general:col.active_border", &arg])
+        .status()?;
+
+    if status.success() {
+        println!("Successfully updated hyprland theme!");
+    }
+
+    Ok(())
+}
 fn update_wallpaper(path: &str) -> std::io::Result<()> {
     let abs_path = std::fs::canonicalize(path)?;
     let path_str = abs_path.to_str().unwrap();
@@ -112,6 +125,9 @@ fn main() {
 
     update_waybar_theme(&bg, &fg).expect("Failed to update waybar");
     println!("Updating waybar successful!");
-    update_wallpaper(path).expect("Failed to update hyprpaper");
     restart_waybar().expect("Failed to restart waybar");
+
+    update_wallpaper(path).expect("Failed to update hyprpaper");
+
+    update_hyprland_theme(&fg).expect("Failed to update hyprland theme");
 }

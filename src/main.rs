@@ -3,7 +3,6 @@ use kmeans_colors::get_kmeans_hamerly;
 use palette::{FromColor, Lab, Srgb};
 use std::fs;
 use std::io;
-use std::os::unix::process;
 use std::process::Command;
 
 fn restart_waybar() -> std::io::Result<()> {
@@ -65,6 +64,7 @@ fn update_hyprland_theme(bg: &str) -> std::io::Result<()> {
 
     Ok(())
 }
+
 fn update_wallpaper(path: &str) -> std::io::Result<()> {
     let abs_path = std::fs::canonicalize(path)?;
     let path_str = abs_path.to_str().unwrap();
@@ -104,7 +104,14 @@ fn main() {
         })
         .collect();
 
-    let result = get_kmeans_hamerly(2, 20, 0.005, false, &pixels, 42);
+    let result = get_kmeans_hamerly(8, 20, 0.005, false, &pixels, 42);
+    let mut centroids = result.centroids;
+
+    centroids.sort_by(|a, b| {
+        let chroma_a = (a.a.powi(2) + a.b.powi(2)).sqrt();
+        let chroma_b = (b.a.powi(2) + b.b.powi(2)).sqrt();
+        chroma_b.partial_cmp(&chroma_a).unwrap()
+    });
 
     println!("Choose mode (0 for Light, 1 for Dark)");
     let mut input_mode = String::new();
@@ -119,8 +126,8 @@ fn main() {
         }
     };
 
-    let mut lab_bg = result.centroids[0];
-    let mut lab_fg = result.centroids[1];
+    let mut lab_bg = centroids[0];
+    let mut lab_fg = centroids[centroids.len() - 1];
 
     if mode == 1 {
         std::mem::swap(&mut lab_bg, &mut lab_fg);

@@ -3,6 +3,7 @@ use kmeans_colors::get_kmeans_hamerly;
 use palette::{FromColor, Lab, Srgb};
 use std::fs;
 use std::io;
+use std::os::unix::process;
 use std::process::Command;
 
 fn restart_waybar() -> std::io::Result<()> {
@@ -105,14 +106,41 @@ fn main() {
 
     let result = get_kmeans_hamerly(2, 20, 0.005, false, &pixels, 42);
 
+    println!("Choose mode (0 for Light, 1 for Dark)");
+    let mut input_mode = String::new();
+    io::stdin().read_line(&mut input_mode).unwrap();
+
+    let mode: u8 = match input_mode.trim() {
+        "0" => 0,
+        "1" => 1,
+        _ => {
+            eprintln!("ERROR! You must choose 0 or 1.");
+            std::process::exit(1);
+        }
+    };
+
     let mut lab_bg = result.centroids[0];
     let mut lab_fg = result.centroids[1];
 
-    lab_bg.l *= 0.4;
-    lab_fg.l = (lab_fg.l * 1.5).min(95.0);
-    lab_fg.a *= 2.0;
-    lab_fg.b *= 2.0;
+    if mode == 1 {
+        std::mem::swap(&mut lab_bg, &mut lab_fg);
+    }
 
+    println!("Saturation Multiplier (0.0 - 2.0 | leave empty for default):");
+    let mut sat_input = String::new();
+    io::stdin().read_line(&mut sat_input).unwrap();
+
+    let trimmed = sat_input.trim();
+
+    if !trimmed.is_empty() {
+        let sat_mult: f32 = trimmed.parse().expect("You're an idiot");
+        lab_bg.l = (lab_bg.l * (2.0 - sat_mult)).clamp(0.0, 100.0);
+        lab_fg.l = (lab_fg.l * (sat_mult)).min(95.0);
+        lab_fg.a *= sat_mult;
+        lab_fg.b *= sat_mult;
+    } else {
+        println!("No input detected, using raw cluster colors...");
+    }
     let color_1 = Srgb::from_color(lab_bg);
     let color_2 = Srgb::from_color(lab_fg);
 
@@ -138,5 +166,5 @@ fn main() {
 
     update_wallpaper(path).expect("Failed to update hyprpaper");
 
-    update_hyprland_theme(&fg).expect("Failed to update hyprland theme");
+    update_hyprland_theme(&bg).expect("Failed to update hyprland theme");
 }

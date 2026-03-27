@@ -12,11 +12,11 @@ use std::process::{Command, Stdio};
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
     if args.len() > 3 {
-        anyhow::bail!("Usage: rustwall <path_to_wallpaper> <1: Dark, 0: Light>")
+        anyhow::bail!("Usage: rustwall <path_to_wallpaper> <1: Filter, 0: No Filter>")
     }
     let path_arg = env::args()
         .nth(1)
-        .context("Please provide a path to an image")?;
+        .context("Please provide a path to an image and specify Filter")?;
 
     let path_str = path_arg.trim();
     let path = Path::new(path_str);
@@ -38,14 +38,16 @@ fn main() -> Result<()> {
     let result = get_kmeans_hamerly(8, 20, 0.005, false, &pixels, 42);
     let centroids = sort_by_chroma(result.centroids);
 
-    let input_mode = env::args().nth(2).context("no")?;
-    let is_dark = input_mode.trim() == "1";
+    let input_mode = env::args()
+        .nth(2)
+        .context("Specify Filter Usage <1: Filter, 0: No Filter>")?;
+    let use_filter = input_mode.trim() == "1";
 
-    let mut lab_bg = centroids[0];
-    let mut lab_fg = *centroids.last().context("No colors found")?;
+    let lab_fg = centroids[0];
+    let mut lab_bg = *centroids.last().context("No colors found")?;
 
-    if is_dark {
-        std::mem::swap(&mut lab_bg, &mut lab_fg);
+    if use_filter {
+        lab_bg = adjust_bg_contrast(lab_bg, lab_fg);
     }
 
     let (bg, fg) = format_to_hex(lab_bg, lab_fg);
@@ -71,6 +73,17 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+fn adjust_bg_contrast(mut bg: Lab, fg: Lab) -> Lab {
+    let min_contrast = 45.0;
+
+    let current_diff = (bg.l - fg.l).abs();
+
+    if current_diff < min_contrast {
+        bg.l = (fg.l - min_contrast).max(2.0);
+    }
+
+    bg
+}
 fn resize(img: DynamicImage) -> DynamicImage {
     if img.width() == 1366 && img.height() == 768 {
         img

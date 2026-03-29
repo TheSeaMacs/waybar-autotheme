@@ -1,3 +1,11 @@
+mod restart_sway;
+mod update_css;
+mod update_rofi;
+
+use crate::restart_sway::restart_swayosd;
+use crate::update_css::update_css_colors;
+use crate::update_rofi::update_rofi_colors;
+
 use anyhow::{Context, Result};
 use image::DynamicImage;
 use image::GenericImageView;
@@ -94,36 +102,6 @@ fn resize(img: DynamicImage) -> DynamicImage {
 fn get_config_path(sub_path: &str) -> Result<PathBuf> {
     let home = std::env::var("HOME").context("HOME not set")?;
     Ok(PathBuf::from(home).join(".config").join(sub_path))
-}
-
-fn update_css_colors(path: &Path, bg: &str, fg: &str) -> Result<()> {
-    let content = format!(
-        "@define-color background {};\n@define-color text-foreground {};\n",
-        bg, fg
-    );
-    fs::write(path, content).context("Failed to write CSS colors")?;
-    Ok(())
-}
-
-fn update_rofi_colors(path: &Path, bg: &str, fg: &str) -> Result<()> {
-    let content = format!(
-        "* {{\n    background: {};\n    foreground: {};\n}}\n",
-        bg, fg
-    );
-    fs::write(path, content).context("Failed to write Rofi colors")?;
-    Ok(())
-}
-
-fn restart_swayosd() -> Result<()> {
-    let _ = Command::new("pkill").arg("swayosd-server").status();
-
-    Command::new("swayosd-server")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .context("Failed to start SwayOSD daemon")?;
-
-    Ok(())
 }
 
 fn restart_waybar() -> Result<()> {
